@@ -75,6 +75,7 @@ namespace ForceFieldTransform
         private IplImage transformedFrame;
         private VideoInput videoInput;
         private CvWindow window;
+        private CvSize size;
 
         #endregion
 
@@ -94,52 +95,6 @@ namespace ForceFieldTransform
 
         #region Public Methods
 
-        /// <summary>
-        /// Apply the field force transform on the given image and show it on the window.
-        /// </summary>
-        /// <param name="image"></param>
-        public void TransformImage(IplImage image)
-        {
-            BitDepth depth = BitDepth.U8;
-            int channels = 1;
-
-            IplImage grayImage = new IplImage(image.Size, depth, channels);
-            IplImage transformedImage = new IplImage(image.Size, depth, channels);
-
-            Cv.CvtColor(image, grayImage, ColorConversion.BgrToGray);
-            transformedImage = ForceFieldTransform(grayImage);
-
-            // window to view what's going on           
-            window.Image = transformedImage;
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        /// <summary>
-        /// Initialize Camera, timer and some objects
-        /// </summary>
-        private void InitializeComponents()
-        {
-            // initialize mainTimer
-            mainTimer = new System.Windows.Forms.Timer();
-            mainTimer.Interval = timerIntervalTime;
-            mainTimer.Tick += ProcessFrame;
-
-            // initialize timer used to count frames per seconds of the camera
-            fpsTimer = new System.Windows.Forms.Timer();
-            fpsTimer.Interval = 1000;
-            fpsTimer.Tick += new EventHandler((object obj, EventArgs eventArgs) =>
-            {
-                labelCounter.Text = counter.ToString();
-                counter = 0;
-            });
-
-            //int min, max = 0, SteppingDelta, currentValue, flags, defaultValue;
-            //vi.GetVideoSettingCamera(deviceID, vi.PropZoom, out min, ref max, out SteppingDelta, out currentValue, out flags, out defaultValue);
-            //MessageBox.Show("min" + min.ToString() + " max" + max.ToString() + " steppingDelta" + SteppingDelta + " currentValue" + currentValue + " flags" + flags + " defaultValue" + defaultValue);
-        }
 
         /// <summary>
         /// Initialize camera input, frame window and other image objects required.
@@ -161,7 +116,7 @@ namespace ForceFieldTransform
             }
 
             // small frame to decrease computational complexity
-            CvSize size = new CvSize(320, 240);
+            size = new CvSize(320, 240);
 
             videoInput.SetupDevice(deviceID, size.Width, size.Height);
             videoInput.SetIdealFramerate(deviceID, 30);
@@ -210,6 +165,7 @@ namespace ForceFieldTransform
         {
             mainTimer.Start();
             fpsTimer.Start();
+            window.Resize(size.Width, size.Height);
             timerInProgress = true;
         }
 
@@ -221,6 +177,54 @@ namespace ForceFieldTransform
             mainTimer.Stop();
             fpsTimer.Stop();
             timerInProgress = false;
+        }
+
+        /// <summary>
+        /// Apply the field force transform on the given image and show it on the window.
+        /// </summary>
+        /// <param name="image"></param>
+        public void TransformImage(IplImage image)
+        {
+            BitDepth depth = BitDepth.U8;
+            int channels = 1;
+
+            IplImage grayImage = new IplImage(image.Size, depth, channels);
+            IplImage transformedImage = new IplImage(image.Size, depth, channels);
+
+            Cv.CvtColor(image, grayImage, ColorConversion.BgrToGray);
+            transformedImage = ForceFieldTransform(grayImage);
+
+            // window to view what's going on
+            window.Resize(transformedImage.Width, transformedImage.Height);
+            window.Image = transformedImage;
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        /// <summary>
+        /// Initialize Camera, timer and some objects
+        /// </summary>
+        private void InitializeComponents()
+        {
+            // initialize mainTimer
+            mainTimer = new System.Windows.Forms.Timer();
+            mainTimer.Interval = timerIntervalTime;
+            mainTimer.Tick += ProcessFrame;
+
+            // initialize timer used to count frames per seconds of the camera
+            fpsTimer = new System.Windows.Forms.Timer();
+            fpsTimer.Interval = 1000;
+            fpsTimer.Tick += new EventHandler((object obj, EventArgs eventArgs) =>
+            {
+                labelCounter.Text = counter.ToString();
+                counter = 0;
+            });
+
+            //int min, max = 0, SteppingDelta, currentValue, flags, defaultValue;
+            //vi.GetVideoSettingCamera(deviceID, vi.PropZoom, out min, ref max, out SteppingDelta, out currentValue, out flags, out defaultValue);
+            //MessageBox.Show("min" + min.ToString() + " max" + max.ToString() + " steppingDelta" + SteppingDelta + " currentValue" + currentValue + " flags" + flags + " defaultValue" + defaultValue);
         }
 
         /// <summary>
